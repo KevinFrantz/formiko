@@ -11,15 +11,16 @@
  * @since 2017-01-16
  **/
 
-
-//include "Communication.h"
 //Bibliothek für Ultraschalsensor
 #include <NewPing.h>
+
+//Bibliothek für Motorsteurung
+#include <Motor.h>
 
 // Ultraschallsensor
 #define TRIGGER_PIN   3  
 #define ECHO_PIN      4  
-#define MAX_DISTANCE  400 
+#define MAX_DISTANCE  200 
 
 // Infarosensoren
 #define INFAROT_LEFT  2
@@ -35,55 +36,44 @@
 #define MOTOR_RIGHT_PWM 7
 
 #define MOTOR_PWM_MIN 10            // arbitrary slow speed PWM duty cycle
-#define MOTOR_PWM_MAX 200           // arbitrary fast speed PWM duty cycle
-#define MOTOR_DIRECTION_DELAY 200  // brief delay for abrupt motor changes
+#define MOTOR_PWM_NORMAL 50
+#define MOTOR_DIRECTION_DELAY 50  // brief delay for abrupt motor changes
 
-NewPing sonar(TRIGGER_PIN, ECHO_PIN, MAX_DISTANCE); // NewPing setup of pins and maximum distance.
+//Initialisierung des Ultraschalsonars
+NewPing sonar(TRIGGER_PIN, ECHO_PIN, MAX_DISTANCE);
 
-//Dreht ein Rad des Roboters
-void turnWheel(int directionPin, int pwmPin, int directionValue=LOW, int pwmValue=MOTOR_PWM_MIN){ 
-  digitalWrite(directionPin,directionValue); // direction = forward
-  analogWrite(pwmPin, 255-pwmValue);         // PWM speed = fast
-}
+//Initialisierung der Motoren
+Motor motorLeft = Motor(MOTOR_LEFT_DIRECTION,MOTOR_LEFT_PWM,HIGH,MOTOR_PWM_NORMAL,MOTOR_DIRECTION_DELAY);
+Motor motorRight = Motor(MOTOR_RIGHT_DIRECTION,MOTOR_RIGHT_PWM,HIGH,MOTOR_PWM_NORMAL,MOTOR_DIRECTION_DELAY);
 
-// Stoppt ein Roboterrad
-void stopWheel(int directionPin, int pwmPin){
-  digitalWrite(directionPin, LOW );
-  digitalWrite(pwmPin, LOW );
-}
-
-//Stopt das Roboterrad
+//Stopt die Motoren
 void stopMotors(){
-  stopWheel(MOTOR_LEFT_DIRECTION,MOTOR_LEFT_PWM);
-  stopWheel(MOTOR_RIGHT_DIRECTION,MOTOR_RIGHT_PWM);
-  
-  //Abwarten bis Roboter gestoppt wurde
-  delay(MOTOR_DIRECTION_DELAY);
+  motorLeft.stop();
+  motorRight.stop();
 }
 
 //Fährt den Roboter nach vorne
-void driveForward(int motorSpeed=MOTOR_PWM_MIN){
-  turnWheel(MOTOR_LEFT_DIRECTION,MOTOR_LEFT_PWM,LOW,motorSpeed);
-  turnWheel(MOTOR_RIGHT_DIRECTION,MOTOR_RIGHT_PWM,LOW,motorSpeed);
-  
+void driveForward(){
+  motorLeft.forward();
+  motorRight.forward();
 }
 
 //Fährt den Roboter zurück
-void driveBackwards(int motorSpeed=MOTOR_PWM_MIN){
-  motorSpeed+=255;
-  turnWheel(MOTOR_RIGHT_DIRECTION,MOTOR_RIGHT_PWM,HIGH,motorSpeed);
-  turnWheel(MOTOR_LEFT_DIRECTION,MOTOR_LEFT_PWM,HIGH,motorSpeed);
-  
+void driveBackward(){
+  motorLeft.backward();
+  motorRight.backward();
 }
 
 //Dreht den Roboter nach rechts
 void turnRight(){
-  turnWheel(MOTOR_LEFT_DIRECTION,MOTOR_LEFT_PWM);
+  motorLeft.forward();
+  motorRight.backward();
 }
 
 //Dreht den Roboter nach links
 void turnLeft(){
-  turnWheel(MOTOR_RIGHT_DIRECTION,MOTOR_RIGHT_PWM);
+  motorLeft.backward();
+  motorRight.forward();
 }
 
 //Gibt die Sensordaten über die serielle Schnittstelle aus
@@ -96,38 +86,36 @@ void serialStatus(){
   Serial.println(digitalRead(INFAROT_RIGHT));
 }
 
-//Fährt den Roboter zuällig durch den Raum und umgeht Hindernisse
-void randomDrive(){
-  //Prüfen ob Objekt in Fahrbahn
-  if(sonar.ping_cm()<=40 && sonar.ping_cm()){
-    if(sonar.ping_cm()<=20){
-      //Rückwärtsgang einlegen wenn zu nah an Objekt
-      driveBackwards();
-    }else{
-      //Zufälligerweise in die eine, oder andere Richtung drehen
-      if(random(2)){
-        turnLeft();
-      }else{
-        turnRight();
-      }
-    }
-  }else{
-    driveForward(MOTOR_PWM_MIN);
-  }
-  //Zeit für Aktionen gewähren
-  delay(MOTOR_DIRECTION_DELAY);
-  
-  //Motoren nach Aktion stoppen
-  stopMotors();
-}
-
 //Lässt eine LED blinken
-void blinkLED(int led,int count=7, int time=1000){
+void blinkLED(int led,int count=1, int time=1000){
   for(int i=0;i<count;i++){  
     digitalWrite(led, HIGH);
     delay(time);               
     digitalWrite(led, LOW);    // turn the LED off by making the voltage LOW
+    delay(time);
   }
+}
+
+//Fährt den Roboter zuällig durch den Raum und umgeht Hindernisse
+void randomDrive(){
+  //Prüfen ob Objekt in Fahrbahn
+  if(sonar.ping_cm()<=20 && sonar.ping_cm()!=0){
+   if(sonar.ping_cm()<=10){  
+     driveBackward();
+   }else
+   //Zufälligerweise in die eine, oder andere Richtung drehen
+   if(random(2)){
+      turnLeft();
+   }else{
+     turnRight();
+   }
+  }else{
+    driveForward();
+  }
+  delay(1000);
+  //Motoren nach Aktion stoppen
+  stopMotors();
+  blinkLED(INTERNAL_LED);
 }
 
 //Stellt ein Serielles Testinterface zur Verfügung
@@ -143,17 +131,17 @@ void siMenue(){
   Serial.println( "3) Turn Right ");
   Serial.println( "4) Stop ");
   Serial.println( "5) Show Status ");
+  Serial.println( "6) Drive Backwards ");
   Serial.println( "" );
   Serial.println( "@author kf" );
   Serial.println( "@since 2016-01-16" );
   Serial.println( "-----------------------------" );
-    
+  Serial.print( "?" );
+//while(true){    
   do{
     isValidInput = true;
-    // get the next character from the serial port
-    Serial.print( "?" );
     //Abwarten bis serielles Interface zur Verfügung steht
-    //while( !Serial.available() );
+    while( !Serial.available() );
     c = Serial.read();
     switch( c )
     {
@@ -172,13 +160,19 @@ void siMenue(){
       case '5':      
         serialStatus();
         break;
+      case '6':      
+        driveBackward();
+        break;
       default:
-        Serial.println("Die gewünschte Funktion steht nicht zur Verfügung!");
+        //isValidInput = false;
         break;
     }
-    delay(1500);
-  } while(true); 
+    //delay(1500);
+  } while(isValidInput);
+//Serial.println("Die gewünschte Funktion steht nicht zur Verfügung!");         
+//}
 }
+
 //Initialisierung
 void setup(){
   //LED initialisierung
@@ -189,34 +183,20 @@ void setup(){
   pinMode(INFAROT_LEFT,INPUT);
   pinMode(INFAROT_RIGHT,INPUT);
   
-  //Initialisierung des linken Motors
-  pinMode(MOTOR_LEFT_DIRECTION, OUTPUT );
-  pinMode(MOTOR_LEFT_PWM, OUTPUT );
-  digitalWrite(MOTOR_LEFT_DIRECTION, LOW );
-  digitalWrite(MOTOR_LEFT_PWM, LOW );
-
-  //Initialisierung des rechten Motors
-  pinMode(MOTOR_RIGHT_DIRECTION, OUTPUT );
-  pinMode(MOTOR_RIGHT_PWM, OUTPUT );
-  digitalWrite(MOTOR_RIGHT_DIRECTION, LOW );
-  digitalWrite(MOTOR_RIGHT_PWM, LOW );
-
   //Open serial monitor at 115200 baud to see ping results.
   Serial.begin(115200);
 
   //Randomwerte zur verfügung stellen
   randomSeed(analogRead(0));
+  
 }
 
 //Main-Loop
 void loop(){
-  //blinkLED(EXTERNAL_LED);
-  //digitalWrite(INTERNAL_LED, HIGH);
   //Solange Standartroutinen ausführen bis USB geladen 
-  //while( !Serial.available() ){
-  //   randomDrive();
-  //}
+  while( !Serial.available() ){
+     randomDrive();
+  }
   //Serieles Menue aufrufen
   siMenue();
-  //serialStatus();
 }

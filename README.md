@@ -6,7 +6,7 @@ Repository for building an Open Source educational robot for under 15 Euros.
 - Compile the software with the [ARDUINO IDE](git@github.com:KevinFrantz/arduino_motor_controll.git)
 - Transfer it to the ARDUINO NANO 
 ## Main components
-The following links are Affiliate links from Amazon. Propably you will get the componens on [ebay](http://www.ebay.de) for a cheaper price.
+The following links are Affiliate links from Amazon. You will get the componens on [ebay](http://www.ebay.de) for a cheaper price.
 ### Arduino Nano
 The [Arduino Nano](http://amzn.to/2Cpe3e2) is the brain of the robot
 ### DC Motor Driver

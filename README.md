@@ -1,11 +1,11 @@
-# Formiko
-Repository for the Formiko (ant) robot.
+# Formiko (ant)
+Repository for building an Open Source educational robot for under 15 Euros.
 ## Installation
 - Clone this repository
 - Adapt the software to your needs
 - Compile the software with the [ARDUINO IDE](git@github.com:KevinFrantz/arduino_motor_controll.git)
 - Transfer it to the ARDUINO NANO 
-## Main components Shopping List
+## Main components
 The following links are Affiliate links from Amazon. Propably you will get the componens on [ebay](http://www.ebay.de) for a cheaper price.
 ### Arduino Nano
 The [Arduino Nano](http://amzn.to/2Cpe3e2) is the brain of the robot

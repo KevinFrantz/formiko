@@ -1,0 +1,3 @@
+[submodule "arduino_motor_controll"]
+	path = arduino_motor_controll
+	url = git@github.com:KevinFrantz/arduino_motor_controll.git
